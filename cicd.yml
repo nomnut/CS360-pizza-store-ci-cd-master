@@ -1,0 +1,133 @@
+name: Pizza Store CICD Pipeline
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]  
+  
+jobs:
+  CI:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x]
+
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Set .env
+      working-directory: ./backend
+      run: | 
+        echo ${{ secrets.SECRET }} >> .env
+        echo ${{ secrets.PORT }} >> .env
+        echo ${{ secrets.DB_URL }} >> .env
+        echo ${{ secrets.NODE_ENV }} >> .env 
+        echo ${{ secrets.CLOUD_NAME }} >> .env 
+        echo ${{ secrets.CLOUD_API }} >> .env
+        echo ${{ secrets.CLOUD_SECRET }} >> .env
+        echo ${{ secrets.REACT_APP_STRIPE_KEY }} >> .env
+        echo ${{ secrets.STRIPE_SECRET_KEY }} >> .env
+
+    - name: Install node modules for backend
+      working-directory: ./backend
+      run: |
+        ls
+        cat .env
+        npm install
+    
+    - name: Install node modules for client & build client
+      working-directory: ./client
+      run: |
+        npm install
+        npm run build
+    
+    - name: Start backend server
+      run: |
+        npm start &
+    
+    - name: Reset&Renew .env 
+      working-directory: ./backend
+      run: |
+        rm -r .env
+        echo "SECRET=${{ secrets.SECRET }}" >> .env
+        echo "PORT=${{ secrets.PORT }}" >> .env
+        echo "DB_URL=${{ secrets.DB_URL }}" >> .env
+        echo "NODE_ENV=${{ secrets.NODE_ENV }}" >> .env 
+        echo "CLOUD_NAME=${{ secrets.CLOUD_NAME }}" >> .env 
+        echo "CLOUD_API=${{ secrets.CLOUD_API }}" >> .env
+        echo "CLOUD_SECRET=${{ secrets.CLOUD_SECRET }}" >> .env
+        echo "REACT_APP_STRIPE_KEY=${{ secrets.REACT_APP_STRIPE_KEY }}" >> .env
+        echo "STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}" >> .env
+    
+    - name: Run Test app.
+      working-directory: ./backend
+      run: |
+        npm test
+
+  
+    
+  #   - name: Login to DockerHub
+  #     uses: docker/login-action@v1
+  #     with:
+  #       username: ${{ secrets.DOCKERHUB_USERNAME }}
+  #       password: ${{ secrets.DOCKERHUB_TOKEN }}
+ 
+  #   - name: Build and push to DockerHub
+  #     if: success()
+  #     uses: docker/build-push-action@v2
+  #     with:
+  #       context: .
+  #       push: true
+  #       tags: homhom2012z/pizzastore:latest
+
+  # CD:
+  #   needs: [CI]
+  #   if: ${{ always() && contains(needs.*.result, 'success') && !(contains(needs.*.result, 'failure')) }}
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       working-directory: ./script
+    
+  #   steps:
+  #   - uses: actions/checkout@v2
+  #   - name: Configure AWS credentials
+  #     if: success()
+  #     uses: aws-actions/configure-aws-credentials@13d241b293754004c80624b5567555c4a39ffbe3
+  #     with:
+  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #         aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+  #         aws-region: ${{ secrets.AWS_REGION }}
+
+  #   - name: Create EC2 and deploy application to EC2
+  #     if: success()
+  #     env: 
+  #         KEY_PAIR_NAME: ${{ secrets.AWS_KEYPAIR_NAME }}
+  #         SECGROUP_ID: ${{ secrets.AWS_SECGROUP_ID }}
+  #     run: aws ec2 run-instances --image-id ami-04902260ca3d33422 --instance-type t2.micro  --key-name $KEY_PAIR_NAME --security-group-ids $SECGROUP_ID --user-data file://user_data_script.txt
+  
+  # CD:
+    # - name: Configure AWS credentials
+    #   if: success()
+    #   uses: aws-actions/configure-aws-credentials@13d241b293754004c80624b5567555c4a39ffbe3
+    #   with:
+    #       aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #       aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #       aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+    #       aws-region: ${{ secrets.AWS_REGION }}
+ 
+    # - name: Create EC2 and deploy application to EC2
+    #   if: success()
+    #   env: 
+    #       KEY_PAIR_NAME: ${{ secrets.AWS_KEYPAIR_NAME }}
+    #       SECGROUP_ID: ${{ secrets.AWS_SECGROUP_ID }}
+    #   run: aws ec2 run-instances --image-id ami-04902260ca3d33422 --instance-type t2.micro  --key-name $KEY_PAIR_NAME --security-group-ids $SECGROUP_ID --user-data file://script/user_data_script.txt
