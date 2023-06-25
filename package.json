@@ -1,0 +1,24 @@
+{
+  "name": "pizza",
+  "version": "1.0.0",
+  "description": "Pizza shop site",
+  "scripts": {
+    "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false npm install --prefix client && npm install --prefix backend && npm run build --prefix client",
+    "start": "npm start --prefix backend",
+    "dev": "npm run build --prefix client && npm run dev --prefix backend"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/charan1973/pizzashop.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/charan1973/pizzashop/issues"
+  },
+  "homepage": "https://github.com/charan1973/pizzashop#readme",
+  "devDependencies": {
+    "dotenv": "^10.0.0",
+    "lerna": "^3.22.1"
+  }
+}
